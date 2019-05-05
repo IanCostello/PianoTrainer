@@ -4,9 +4,10 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include "tones.h"
+#include "track-0-voice-1.h"
 
 // songage = { {left_hand_data}, {right_hand_data}};
-int songage[2][4];
+//int songage[2][4];
 int bpm = 120;
 
 int mode;
@@ -34,6 +35,14 @@ void loop() {
   static int right_sum;
   static int current_note_l;
   static int current_note_r;  
+  static int user_note;
+  static int arduino_note;
+  static int user_playing;
+  static int pitch;
+  static int duration;
+  static int previous_time;
+  static int read_pitch;
+  
   
   if (digitalRead(21) == HIGH){ // if switch is on
     
@@ -45,26 +54,64 @@ void loop() {
     // Once the user gets through the whole song, it switches to the other hand
     // this continues until the user switches to practice mode
 
-    // NOTE: current structure doesn't account for the length of the note, just the order they are played in
-    
     if(mode == 0) { // just switched to this mode; setup
       mode = 1;
-      hand_i = 0;   // start with teaching the left hand
       
+      /*hand_i = 0;   // start with teaching the left hand
       // set neopixels on arduino to the left
       neopixel_blit(left_hand_pixels);
+      */
       
-      current_note=0;          
+      user_note=0;
+      arduino_note=0;
+
+      // setup for arduino to play the first ten notes
+      user_playing = 0;
+      previous_time = millis();
+      pitch = 0;
+      duration = pgm_read_word_near(songage);
     }
 
-    // read a pitch 
-    int pitch = 0; 
-    if(pitch + 10 > songage[hand_i][current_note] && pitch - 10 < songage[hand_i][current_note]) {
-      // if pitch is within a few hz of the target, move to the next note
-      current_note++;
-      // set neopixels on piano
+    
+    if(user_playing){
+      
+      read_pitch = 0;
+      
+      if(read_pitch == pitch){
+        user_note+=2;
+        pitch = pgm_read_word_near(songage + user_note);
+
+        
+        // light neopixels
+        lightKey(pitch);
+
+        if(user_note%20 == 0)
+          user_playing = 0;
+      }
+      
+    }
+    else{
+      if(millis() - previous_time >= duration){
+        if(arduino_note%20 == 0) {
+          user_playing = 1;
+          // blank neopixels
+          pitch = pgm_read_word_near(songage + user_note);
+        }
+        else{
+          previous_time = millis();
+        
+          pitch = pgm_read_word_near(songage + arduino_note + 1);
+          duration = pgm_read_word_near(songage + arduino_note + 2);
+          arduino_note+=2;
+
+          // set neopixels
+          lightKey(pitch);
+          speaker_tone(pitch, duration);
+        }
+      }
     }
 
+    /*
     // if they reached the end of the array, switch hands
     // TODO: change 4 to length, or check if they've hit -1 or some other marker
     //       could play a few notes on the arduino to indicate that they successfully got through that hand
@@ -80,9 +127,9 @@ void loop() {
         neopixel_blit(right_hand_pixels);
       }
     }
-    
+    */
   }
-  else { // switch is off
+ /* else { // switch is off
     
     // Practice mode
     // this mode lights the neopixels for both hands in time with the song, so the user can practice at full speed
@@ -142,5 +189,5 @@ void loop() {
     }
 
   } // end practice mode block
-
+*/
 } // end loop()
