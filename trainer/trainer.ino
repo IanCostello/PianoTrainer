@@ -6,10 +6,14 @@
 #include "tones.h"
 #include "track-0-voice-1.h"
 
+/** Globals for Pitch to LEDs */
+#define LED_PIN 6
+#define LED_COUNT 30
+#define C4_FREQUENCY 261.63
+
 // songage = { {left_hand_data}, {right_hand_data}};
 //int songage[2][4];
 int bpm = 120;
-
 int mode;
 
 Pixels blank = {{0}};
@@ -25,6 +29,11 @@ void setup() {
   pinMode(21, INPUT); // switch
   
   mode = (digitalRead(21) == HIGH)? 1 : 0;
+
+   /** Neopixel setup */
+   strip.begin();
+   strip.show();
+   strip.setBrightness(40);
 }
 
 void loop() {
@@ -191,3 +200,42 @@ void loop() {
   } // end practice mode block
 */
 } // end loop()
+
+
+/** Lights the correct key for a given pitch */
+void lightKey(int pitch) {
+  /** Hard coded bin sizes tell how to truncate incidental values into lower key*/
+  static int binSizes[] = {2, 4, 5, 7, 9, 11, 12, 14, 16, 20, 19, 21, 23, 25, 26, 28};
+
+  /** Turn frequency into discrete key*/
+  int semitones_above_c4 = 12 * (double) log((double) pitch/C4_FREQUENCY)/log(2);
+
+  /** Truncate incidentals */
+  int key = 0;
+  while (binSizes[key+1] < semitonesAboveC4 && key < 7) {
+    key++;
+  }
+
+  /** Map to correct key */
+  key = key * 2;
+
+  /** Light neopixel */
+  strip.clear();
+  if (isIncidental(semitonesAboveC4)) {
+    strip.setPixelColor(key, 0, 255, 0);
+  } else {
+    strip.setPixelColor(key, 255, 0, 0);
+  }
+  strip.show();
+}
+
+/** Returns if a given semitone corresponds to a incidental relative to c3 */
+int isIncidental(int semitonesAboveC4) {
+    static int incidentalKeys[] = {1, 3, 6, 8,11, 13, 15, 18, 20, 23, 25, 27};
+    for (int i = 0; i < 12; i += 1) {
+      if (incidentalKeys[i] == semitonesAboveC4) {
+        return 1;
+      }
+    }
+    return 0;
+}
