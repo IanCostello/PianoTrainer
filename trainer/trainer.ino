@@ -11,6 +11,7 @@
 #define LED_COUNT 30
 #define C4_FREQUENCY 261.63
 
+
 // songage = { {left_hand_data}, {right_hand_data}};
 //int songage[2][4];
 int bpm = 120;
